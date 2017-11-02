@@ -48,7 +48,14 @@
 unsigned long rndinitpin = 0;
 unsigned long waittime = 0;
 
-unsigned long movetime = 1000;
+//This is the time it takes to move a motor CW or CCW
+//For example, to run my TSINY (www.tsinymotor.com) TS-30GZ6287R-SS 12 volt 
+//dc motor (30 watts) exactly 90 degrees.  Your results may vary.
+//The best way to do this is with a switch when your target hits the correct
+//stop/start location, but hey, this works for my purposes.
+unsigned long movetime = 500;
+
+int led = 13;
 
 int m1on = 10;
 int m1pos = 9;
@@ -58,7 +65,7 @@ int m2on = 7;
 int m2pos = 6;
 int m2neg = 5;
 
-//
+//A variable to set whether we need to move CW or CCW for each motor
 bool m1enab = true;
 bool m2enab = false;
  
@@ -76,6 +83,10 @@ void setup()
     pinMode(m1on, OUTPUT);
     pinMode(m1pos, OUTPUT);
     pinMode(m1neg, OUTPUT);
+    //Set Motor A Pins to Low to Init
+    digitalWrite(m1pos, LOW);    
+    digitalWrite(m1neg, LOW);
+    analogWrite(m1on, 0);    
   }
 
   if (m2enab)
@@ -84,6 +95,8 @@ void setup()
     pinMode(m2pos, OUTPUT);
     pinMode(m2neg, OUTPUT);
   }
+
+  pinMode(led, OUTPUT);
 }
 
 void loop() 
@@ -100,24 +113,62 @@ void loop()
     #ifdef DEBUG
        Serial.println("Setting Target 1 High Clockwise");
     #endif
-    m1enab = true;             //Denote we've moved CW, next time we move CCW
+    m1enab = false;             //Denote we've moved CW, next time we move CCW
+    if (led > -1)
+    {
+       digitalWrite(led,HIGH);  
+    }
+
+    //Turn Motor On for Amount of Time it Takes to move it 90 degrees
     digitalWrite(m1pos,HIGH);  //Set L298N Positive Control Line IN1 High
-    digitalWrite(m1pos,LOW);   //Set L298N Negative Control Line IN2 Low
+    digitalWrite(m1neg,LOW);   //Set L298N Negative Control Line IN2 Low
     //The L298N uses the jumper to the left of IN1 as a DC motor 1 enable jumper. 
     //We connect this to an Arduino PWM output for DC motor and speed control.
     analogWrite(m1on, 255);    //Set to as fast as motor will go (from 0 to 255)
     delay(movetime);           //We now wait for motor to finish moving 90 degrees (depends on motor gearing)
+    //Turn Motor Off to Stop It
+    digitalWrite(m1pos,LOW);  //Set L298N Positive Control Line IN1 Low (Off)
+    digitalWrite(m1neg,LOW);   //Set L298N Negative Control Line IN2 Low (Off)
+
+    if (led > -1)
+    {
+        digitalWrite(led, LOW);
+    }
+
+    #ifdef DEBUG
+       Serial.println("Done Setting Target 1 High Clockwise");
+    #endif
   }
   else
   {
     #ifdef DEBUG
-       Serial.println("Setting Target 1 Low Counter Clockwise");
+       Serial.println("Setting Target 1 High Counter Clockwise");
     #endif
-    m1enab = false;           //Denote we've moved CCW, next time we move CW
-    digitalWrite(m1pos,LOW);  //Set L298N Positive Control Line IN1 High
-    digitalWrite(m1pos,HIGH); //Set L298N Negative Control Line IN2 Low
-    analogWrite(m1on, 255);   //Set to as fast as motor will go (from 0 to 255)
+    m1enab = true;             //Denote we've moved CCW, next time we move CW
+    if (led > -1)
+    {
+       digitalWrite(led,HIGH);  
+    }
+
+    //Turn Motor On for Amount of Time it Takes to move it 90 degrees in the opposite direction
+    digitalWrite(m1pos,LOW);    //Set L298N Positive Control Line IN1 Low (as we want to go backwards)
+    digitalWrite(m1neg,HIGH);   //Set L298N Negative Control Line IN2 High (as we want to go backwards)
+    //The L298N uses the jumper to the left of IN1 as a DC motor 1 enable jumper. 
+    //We connect this to an Arduino PWM output for DC motor and speed control.
+    analogWrite(m1on, 255);    //Set to as fast as motor will go (from 0 to 255)
     delay(movetime);           //We now wait for motor to finish moving 90 degrees (depends on motor gearing)
+    //Turn Motor Off to Stop It
+    digitalWrite(m1pos,LOW);  //Set L298N Positive Control Line IN1 Low (Off)
+    digitalWrite(m1neg,LOW);   //Set L298N Negative Control Line IN2 Low (Off)
+
+    if (led > -1)
+    {
+        digitalWrite(led, LOW);
+    }
+
+    #ifdef DEBUG
+       Serial.println("Done Setting Target 1 High Counter Clockwise");
+    #endif
   }
 
 
@@ -134,4 +185,3 @@ void loop()
   
   delay(waittime);
 }
-
